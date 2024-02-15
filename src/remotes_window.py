@@ -492,8 +492,21 @@ class RemotesWindow(Adw.Window):
                 is_enabled = False
             dialog.set_response_enabled("continue", is_enabled)
 
+        open_custom_directory_picker = Gtk.Button()
+
         def set_user(widget):
             self.add_as_user = widget.get_active()
+
+        def set_custom(widget) -> None:
+            if widget.get_active():
+                open_custom_directory_picker.show()
+            else:
+                open_custom_directory_picker.hide()
+
+        def pick_custom(event) -> None:
+            self.pick_repo_directory()
+
+        open_custom_directory_picker.connect("clicked", pick_custom)
 
         self.name_to_add = ""
         self.url_to_add = ""
@@ -535,10 +548,22 @@ class RemotesWindow(Adw.Window):
         system_check.set_group(user_check)
         system_row.set_activatable_widget(system_check)
 
+        custom_row = Adw.ActionRow(
+            title=_("Custom"),
+            subtitle=_("Remote will be installed to a custom location on any filesystem"),
+        )
+        custom_check = Gtk.CheckButton()
+        custom_check.connect("toggled", set_custom)
+        custom_row.add_prefix(custom_check)
+        custom_check.set_group(user_check)
+        custom_row.set_activatable_widget(custom_check)
+
         install_type_list.append(user_row)
         install_type_list.append(system_row)
+        install_type_list.append(custom_row)
 
         info_box.append(install_type_list)
+        info_box.append(open_custom_directory_picker)
 
         dialog.set_extra_child(info_box)
         dialog.connect("response", self.on_add_response, dialog.choose_finish, row)
@@ -637,18 +662,27 @@ class RemotesWindow(Adw.Window):
             title=_("System"),
             subtitle=_("Remote will be available to every user on the system"),
         )
+        custom_row = Adw.ActionRow(
+            title=_("Custom"),
+            subtitle=_("Remote will be installed to a custom location on any filesystem"),
+        )
         user_check = Gtk.CheckButton()
         system_check = Gtk.CheckButton()
+        custom_check = Gtk.CheckButton()
 
         # Apply Widgets
         user_row.add_prefix(user_check)
         user_row.set_activatable_widget(user_check)
         system_row.add_prefix(system_check)
         system_row.set_activatable_widget(system_check)
+        custom_row.add_prefix(custom_check)
+        custom_row.set_activatable_widget(custom_check)
         user_check.set_group(system_check)
+        user_check.set_group(custom_check)
         options_list.append(name_row)
         options_list.append(user_row)
         options_list.append(system_row)
+        options_list.append(custom_row)
         options_box.append(options_list)
         dialog.set_extra_child(options_box)
 
@@ -656,6 +690,15 @@ class RemotesWindow(Adw.Window):
         user_check.set_active(True)
         options_list.add_css_class("boxed-list")
         Gtk.Window.present(dialog)
+
+    def directory_callback(self, obj, result):
+        directory = obj.select_folder_finish(result)
+        directory_path = directory.get_path()
+        print(directory_path)
+
+    def pick_repo_directory(self) -> None:
+        file_chooser = Gtk.FileDialog()
+        test = file_chooser.select_folder(self, None, self.directory_callback)
 
     def file_callback(self, object, result):
         try:

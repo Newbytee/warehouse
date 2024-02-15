@@ -223,4 +223,5 @@ class WarehouseApplication(Adw.Application):
 def main(version):
     """The application's entry point."""
     app = WarehouseApplication()
+    print("yooo")
     return app.run(sys.argv)
